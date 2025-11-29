@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Room</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f6efe7; /* 奶茶背景 */
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    #container {
+      width: 500px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+
+    /* ------- 訊息區 ------- */
+    #messages {
+      height: 300px;
+      overflow-y: auto;
+      border: 1px solid #d8c4a8;
+      padding: 10px;
+      margin-bottom: 15px;
+      background: #faf7f3;
+      border-radius: 12px;
+    }
+
+    .message {
+      margin-bottom: 10px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      max-width: 80%;
+      display: block;
+      clear: both;
+      line-height: 1.4;
+    }
+
+    .user {
+      background: #e8d5c4;
+      float: right;
+    }
+
+    .assistant {
+      background: #f5eee7;
+      float: left;
+    }
+
+    /* ------- 輸入框與按鈕 ------- */
+    #inputBox {
+      display: flex;
+      gap: 8px;
+    }
+
+    #inputBox input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #d8c4a8;
+    }
+
+    #send {
+      background: #b8815f;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #logout {
+      background: #c46a6a;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    /* -------- 登入 / 註冊統一樣式 -------- */
+    #authBox {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+      padding: 0 20px;
+    }
+
+    #authBox input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #d2bfa1;
+      text-align: left;
+      background: #fff;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    #authBox button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+      background: #b8815f;
+      color: #fff;
+      box-sizing: border-box;
+    }
+
+    #switchBtn {
+      background: #d3b89a;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="container">
+
+  <!-- 登入 / 註冊畫面 -->
+  <div id="authView">
+    <h2 id="authTitle" style="text-align:center; color:#7a5035;">登入</h2>
+    <div id="authBox">
+      <input type="text" id="username" placeholder="username">
+      <input type="password" id="password" placeholder="password">
+      <button id="authBtn">登入</button>
+      <button id="switchBtn">去註冊</button>
+    </div>
+  </div>
+
+  <!-- 聊天畫面 -->
+  <div id="chatView" style="display:none;">
+    <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:10px;">
+      <h2 style="color:#7a5035;">Chat</h2>
+      <div>
+        <span id="hiUser" style="margin-right:10px; color:#7a5035;"></span>
+        <button id="logout">Logout</button>
+      </div>
+    </div>
+
+    <div id="messages"></div>
+
+    <div id="inputBox">
+      <input type="text" id="messageInput" placeholder="輸入訊息...">
+      <button id="send">送出</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API_BASE = "http://127.0.0.1:8000";
+let token = localStorage.getItem("token");
+let username = localStorage.getItem("username");
+
+// Elements
+const authView = document.getElementById("authView");
+const chatView = document.getElementById("chatView");
+const hiUser = document.getElementById("hiUser");
+const messagesDiv = document.getElementById("messages");
+const inputEl = document.getElementById("messageInput");
+const usernameEl = document.getElementById("username");
+const passwordEl = document.getElementById("password");
+const authBtn = document.getElementById("authBtn");
+const switchBtn = document.getElementById("switchBtn");
+
+let mode = "login"; // login or register
+
+function showChat() {
+  authView.style.display = "none";
+  chatView.style.display = "block";
+  hiUser.textContent = "Hi, " + username;
+  loadHistory();
+}
+
+function showAuth() {
+  authView.style.display = "block";
+  chatView.style.display = "none";
+}
+
+// 登出
+document.getElementById("logout").onclick = () => {
+  token = null;
+  username = null;
+  localStorage.removeItem("token");
+  localStorage.removeItem("username");
+  messagesDiv.innerHTML = "";
+  showAuth();
+};
+
+// 切換登入/註冊
+switchBtn.onclick = () => {
+  mode = mode === "login" ? "register" : "login";
+  document.getElementById("authTitle").textContent = mode === "login" ? "登入" : "註冊";
+  authBtn.textContent = mode === "login" ? "登入" : "註冊";
+  switchBtn.textContent = mode === "login" ? "去註冊" : "去登入";
+};
+
+// 登入 / 註冊 API
+authBtn.onclick = async () => {
+  const user = usernameEl.value.trim();
+  const pass = passwordEl.value.trim();
+  if (!user || !pass) { alert("請輸入 username/password"); return; }
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/${mode}`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({username: user, password: pass})
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      token = data.token;
+      username = data.username;
+      localStorage.setItem("token", token);
+      localStorage.setItem("username", username);
+      showChat();
+    } else {
+      alert(data.detail || "錯誤");
+    }
+
+  } catch(e) {
+    alert("網路錯誤");
+  }
+};
+
+// 載入歷史聊天
+async function loadHistory(){
+  messagesDiv.innerHTML = "";
+  try {
+    const res = await fetch(`${API_BASE}/chat/history`, {
+      headers: { Authorization: "Bearer " + token }
+    });
+
+    if (!res.ok) return;
+
+    const data = await res.json();
+    data.forEach(m => appendMessage(m.role, m.content));
+
+  } catch(e) { console.error(e); }
+}
+
+// 送出訊息
+document.getElementById("send").onclick = async () => {
+  const text = inputEl.value.trim();
+  if (!text) return;
+
+  appendMessage("user", text);
+  inputEl.value = "";
+
+  try {
+    const res = await fetch(`${API_BASE}/chat/send`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json", "Authorization":"Bearer " + token},
+      body: JSON.stringify({content:text})
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      appendMessage("assistant", data.reply);
+    } else {
+      alert(data.detail || "LLM error");
+    }
+
+  } catch(e){
+    alert("網路錯誤");
+  }
+};
+
+// 顯示訊息
+function appendMessage(role, content){
+  const div = document.createElement("div");
+  div.className = "message " + role;
+  div.textContent = content;
+  messagesDiv.appendChild(div);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// 已登入則直接進聊天
+if(token && username){
+  showChat();
+} else {
+  showAuth();
+}
+</script>
+
+</body>
+</html>
