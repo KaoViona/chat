@@ -1,23 +1,21 @@
-# main.py
+# backend/main.py
 import os
-import sys
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer
 from sqlmodel import select
-from db import init_db, get_session
-from models import User, Message
-from auth import hash_password, verify_password, create_token, get_current_user
-from llm_client import generate_reply
+from backend.db import init_db, get_session
+from backend.models import User, Message
+from backend.auth import hash_password, verify_password, create_token, get_current_user
+from backend.llm_client import generate_reply
 from pydantic import BaseModel
-sys.path.append(os.path.dirname(__file__))  # 加入 backend 路徑
 
 # ========================================
 # Security
 # ========================================
-security = HTTPBearer()  # 這個會讓 Swagger UI 出現鎖頭 Authorize
+security = HTTPBearer()  # 讓 Swagger UI 出現鎖頭 Authorize
 
 # ========================================
 # FastAPI App
