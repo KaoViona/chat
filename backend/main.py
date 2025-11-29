@@ -1,4 +1,4 @@
-# backend/main.py
+# main.py
 import os
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,11 +6,13 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPBearer
 from sqlmodel import select
-from backend.db import init_db, get_session
-from backend.models import User, Message
-from backend.auth import hash_password, verify_password, create_token, get_current_user
-from backend.llm_client import generate_reply
 from pydantic import BaseModel
+
+# 同層 import，避免找不到模組
+from db import init_db, get_session
+from models import User, Message
+from auth import hash_password, verify_password, create_token, get_current_user
+from llm_client import generate_reply
 
 # ========================================
 # Security
@@ -28,7 +30,7 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 開發階段先允許全部
+    allow_origins=["*"],  # 開發階段允許全部
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -120,7 +122,7 @@ async def send_message(payload: ChatIn, session=Depends(get_session), auth=Depen
     return {"reply": reply}
 
 # ========================================
-# serve 純 HTML 前端
+# serve 前端
 # ========================================
 FRONTEND_PATH = os.path.join(os.path.dirname(__file__), "..", "frontend")
 
