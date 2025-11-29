@@ -6,3 +6,5 @@ passlib[bcrypt]
 pyjwt
 httpx
 pydantic
+jinja2
+itsdangerous
