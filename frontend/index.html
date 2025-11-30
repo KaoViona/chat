@@ -164,9 +164,9 @@
 </div>
 
 <script>
-fetch(API_BASE + "/").catch(()=>{}); // 用來喚醒 Render
+const API_BASE = "https://chat-6-24fr.onrender.com"; // 先宣告再使用
+fetch(API_BASE + "/").catch(() => {}); // 喚醒 Render
 
-const API_BASE = "https://chat-6-24fr.onrender.com";
 let token = localStorage.getItem("token");
 let username = localStorage.getItem("username");
 
@@ -180,9 +180,13 @@ const usernameEl = document.getElementById("username");
 const passwordEl = document.getElementById("password");
 const authBtn = document.getElementById("authBtn");
 const switchBtn = document.getElementById("switchBtn");
+const logoutBtn = document.getElementById("logout");
 
 let mode = "login"; // login or register
 
+// ------------------------
+// 顯示聊天室或登入畫面
+// ------------------------
 function showChat() {
   authView.style.display = "none";
   chatView.style.display = "block";
@@ -195,8 +199,10 @@ function showAuth() {
   chatView.style.display = "none";
 }
 
+// ------------------------
 // 登出
-document.getElementById("logout").onclick = () => {
+// ------------------------
+logoutBtn.onclick = () => {
   token = null;
   username = null;
   localStorage.removeItem("token");
@@ -205,7 +211,9 @@ document.getElementById("logout").onclick = () => {
   showAuth();
 };
 
+// ------------------------
 // 切換登入/註冊
+// ------------------------
 switchBtn.onclick = () => {
   mode = mode === "login" ? "register" : "login";
   document.getElementById("authTitle").textContent = mode === "login" ? "登入" : "註冊";
@@ -213,17 +221,22 @@ switchBtn.onclick = () => {
   switchBtn.textContent = mode === "login" ? "去註冊" : "去登入";
 };
 
+// ------------------------
 // 登入 / 註冊 API
+// ------------------------
 authBtn.onclick = async () => {
   const user = usernameEl.value.trim();
   const pass = passwordEl.value.trim();
-  if (!user || !pass) { alert("請輸入 username/password"); return; }
+  if (!user || !pass) {
+    alert("請輸入 username/password");
+    return;
+  }
 
   try {
     const res = await fetch(`${API_BASE}/auth/${mode}`, {
       method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({username: user, password: pass})
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: user, password: pass })
     });
 
     const data = await res.json();
@@ -237,15 +250,19 @@ authBtn.onclick = async () => {
     } else {
       alert(data.detail || "錯誤");
     }
-
-  } catch(e) {
+  } catch (e) {
+    console.error(e);
     alert("網路錯誤");
   }
 };
 
+// ------------------------
 // 載入歷史聊天
-async function loadHistory(){
+// ------------------------
+async function loadHistory() {
   messagesDiv.innerHTML = "";
+  if (!token) return;
+
   try {
     const res = await fetch(`${API_BASE}/chat/history`, {
       headers: { Authorization: "Bearer " + token }
@@ -255,11 +272,14 @@ async function loadHistory(){
 
     const data = await res.json();
     data.forEach(m => appendMessage(m.role, m.content));
-
-  } catch(e) { console.error(e); }
+  } catch (e) {
+    console.error(e);
+  }
 }
 
+// ------------------------
 // 送出訊息
+// ------------------------
 document.getElementById("send").onclick = async () => {
   const text = inputEl.value.trim();
   if (!text) return;
@@ -270,8 +290,8 @@ document.getElementById("send").onclick = async () => {
   try {
     const res = await fetch(`${API_BASE}/chat/send`, {
       method: "POST",
-      headers: {"Content-Type":"application/json", "Authorization":"Bearer " + token},
-      body: JSON.stringify({content:text})
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+      body: JSON.stringify({ content: text })
     });
 
     const data = await res.json();
@@ -281,14 +301,16 @@ document.getElementById("send").onclick = async () => {
     } else {
       alert(data.detail || "LLM error");
     }
-
-  } catch(e){
+  } catch (e) {
+    console.error(e);
     alert("網路錯誤");
   }
 };
 
+// ------------------------
 // 顯示訊息
-function appendMessage(role, content){
+// ------------------------
+function appendMessage(role, content) {
   const div = document.createElement("div");
   div.className = "message " + role;
   div.textContent = content;
@@ -296,13 +318,16 @@ function appendMessage(role, content){
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-// 已登入則直接進聊天
-if(token && username){
+// ------------------------
+// 初始畫面
+// ------------------------
+if (token && username) {
   showChat();
 } else {
   showAuth();
 }
 </script>
+
 
 </body>
 </html>
