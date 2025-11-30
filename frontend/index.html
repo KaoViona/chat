@@ -164,6 +164,8 @@
 </div>
 
 <script>
+fetch(API_BASE + "/").catch(()=>{}); // 用來喚醒 Render
+
 const API_BASE = "https://chat-6-24fr.onrender.com";
 let token = localStorage.getItem("token");
 let username = localStorage.getItem("username");

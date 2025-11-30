@@ -134,3 +134,7 @@ async def serve_index():
 ASSETS_PATH = os.path.join(FRONTEND_PATH, "assets")
 if os.path.exists(ASSETS_PATH):
     app.mount("/assets", StaticFiles(directory=ASSETS_PATH), name="assets")
+
+@app.get("/")
+def root():
+    return {"message": "API is running"}
